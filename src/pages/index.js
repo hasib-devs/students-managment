@@ -1,6 +1,6 @@
 import Head from "next/head";
 import studentsList from "../data/students.js";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 function Home() {
   const [inputText, setInputText] = useState("");
@@ -13,6 +13,24 @@ function Home() {
     Email: "",
     PhoneNumber: "",
   });
+
+  useEffect(() => {
+    if (window && window.localStorage) {
+      const studentsDb = window.localStorage.getItem("students");
+      if (studentsDb) {
+        setStudents(JSON.parse(studentsDb));
+      }
+    } else {
+      localStorage.setItem("students", JSON.stringify(students));
+    }
+  }, []);
+
+  useEffect(() => {
+    setStudents((prevData) => {
+      localStorage.setItem("students", JSON.stringify(prevData));
+      return prevData;
+    });
+  }, [students]);
 
   const getStudents = useMemo(() => {
     const filteredStudents = students.filter((student) => {
