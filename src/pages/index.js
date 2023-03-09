@@ -1,10 +1,18 @@
 import Head from "next/head";
-import students from "../data/students.json";
+import studentsList from "../data/students.js";
 import { useState, useMemo } from "react";
 
-export default function Home() {
+function Home() {
   const [inputText, setInputText] = useState("");
-  const [page, setPage] = useState(1);
+  const [students, setStudents] = useState(studentsList);
+  const [showModal, setShowModal] = useState(false);
+  const [currentStudent, setcurrentStudent] = useState({
+    StudentName: "",
+    isPresent: false,
+    StudentID: "",
+    Email: "",
+    PhoneNumber: "",
+  });
 
   const getStudents = useMemo(() => {
     const filteredStudents = students.filter((student) => {
@@ -24,30 +32,37 @@ export default function Home() {
       }
       return 0;
     });
+    return sortedStudents;
+  }, [inputText, students]);
 
-    const startIndex = (page - 1) * 15;
-    const endIndex = startIndex + 15;
-    const currentStudents = sortedStudents.slice(startIndex, endIndex);
-
-    return currentStudents;
-  }, [inputText, page, students]);
-
-  const totalPages = Math.ceil(students.length / 15);
-
-  const handlePageChange = (pageNumber) => {
-    setPage(pageNumber);
+  const openModal = (st) => {
+    setcurrentStudent(st);
+    setShowModal(true);
   };
 
-  const goNextPage = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
-    }
-  };
+  const setAbsent = () => {
+    setStudents((prevState) => {
+      const studentsCopy = [...prevState];
+      const index = studentsCopy.findIndex(
+        (s) => s.StudentID === currentStudent.StudentID
+      );
+      studentsCopy[index].isPresent = false;
 
-  const goPrevPage = () => {
-    if (page > 1) {
-      setPage(page - 1);
-    }
+      return studentsCopy;
+    });
+    setShowModal(false);
+  };
+  const setPresent = () => {
+    setStudents((prevState) => {
+      const studentsCopy = [...prevState];
+      const index = studentsCopy.findIndex(
+        (s) => s.StudentID === currentStudent.StudentID
+      );
+      studentsCopy[index].isPresent = true;
+
+      return studentsCopy;
+    });
+    setShowModal(false);
   };
 
   return (
@@ -72,22 +87,26 @@ export default function Home() {
             </div>
 
             <div className="card card-body">
-              <table class="table  table-hover">
+              <table className="table  table-hover">
                 <thead>
                   <tr>
                     <th scope="col">ID</th>
                     <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Phone</th>
+                    <th scope="col">Present</th>
                   </tr>
                 </thead>
                 <tbody>
                   {getStudents.map((student, i) => (
-                    <tr key={i}>
+                    <tr key={i} onClick={() => openModal(student)}>
                       <th scope="row">{student.StudentID}</th>
                       <td>{student.StudentName}</td>
-                      <td>{student.Email}</td>
-                      <td>{student.PhoneNumber}</td>
+                      <td>
+                        {student.isPresent ? (
+                          <span className="badge bg-primary">Yes</span>
+                        ) : (
+                          <span className="badge bg-warning">No</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -95,39 +114,38 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        <nav
-          className="mt-4 d-flex justify-content-end"
-          aria-label="Page navigation example"
-        >
-          <ul class="pagination">
-            <li class="page-item">
-              <a onClick={goPrevPage} class="page-link" href="#">
-                Previous
-              </a>
-            </li>
-            {Array.from(Array(totalPages).keys()).map((pageNumber) => (
-              <li class="page-item" key={pageNumber}>
-                <a
-                  onClick={() => handlePageChange(pageNumber + 1)}
-                  className={`page-link ${
-                    page === pageNumber + 1 ? "active" : ""
-                  }`}
-                  href="#"
-                >
-                  {pageNumber + 1}
-                </a>
-              </li>
-            ))}
-
-            <li class="page-item">
-              <a onClick={goNextPage} class="page-link" href="#">
-                Next
-              </a>
-            </li>
-          </ul>
-        </nav>
       </div>
+
+      {showModal && (
+        <div className="my-modal">
+          <div className="content">
+            <div className="body ">
+              <h5 className="text-center mb-5">{currentStudent.StudentName}</h5>
+              <div className="d-flex justify-content-center">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancle
+                </button>
+                {currentStudent.isPresent ? (
+                  <button onClick={setAbsent} className="btn btn-warning ms-3">
+                    Set Absent
+                  </button>
+                ) : (
+                  <button onClick={setPresent} className="btn btn-primary ms-3">
+                    Set Present
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+Home.getInitialProps = () => {
+  return {};
+};
+export default Home;
